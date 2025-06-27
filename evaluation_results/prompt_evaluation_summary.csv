@@ -1,0 +1,41 @@
+poem_idx,generated_prompt,reference_prompt,bleu,rougeL
+0,"Hình ảnh một người đàn ông ngồi trong đám mây trắng tinh khiết, tay đặt xuống đất. Không khí buồn chán, cô đơn, màu sắc chủ đạo là màu xám và hồng. Phong cách nghệ thuật là triệt để.","Một cảnh thiên nhiên với hoa lá và ánh đèn nguyệt, thể hiện nỗi buồn về tình yêu.",0.006243702571093031,0.23255813953488372
+1,"Gió lạnh đêm thu, bóng trăng trên nhà xế. Nỗi buồn sầu say, ánh trăng lấp lánh. Màu nâu và vàng, phong cách tối giản.","Một buổi tối trăng sáng, gió nhẹ, đôi lứa ngồi bên nhau, thể hiện nỗi buồn và tình yêu.",0.021084454569051277,0.273972602739726
+2,"Hợi sang xanh biếc ngọn đèn tàn, mùa thu im ắng, làn khói chập chờn, cai gà eo óc khua bên trướng. Không khí buồn rỉ, màu vàng đỏ nhạt, phong cách cổ điển.","Một đêm tĩnh lặng, ánh đèn tàn, âm thanh của khúc khải hoàn từ những nỗi nhớ.",0.011577941920572241,0.30769230769230765
+3,"Cảnh: Đêm xuân với hoa nở rộ.
+Cảm xúc: Mái tóc buồn, nhạt, mơ hồ
+Màu sắc: Xanh lá cây, vàng, trắng
+Phong cách: Huyền bí, tinh tế","Một buổi sáng xuân lạnh lẽo, có bóng dâu và gió lạnh, thể hiện nỗi buồn và tâm sự.",0.006716472052354862,0.2894736842105263
+4,"Trời xanh cao thẳm mấy tầng khơi, một thế giới ngưng trôi giữa sương mù trắng, cảm giác buồn bã sâu sắc, màu nâu nhạt, phong cách cổ điển.","Một không gian lãng mạn với bầu trời xanh, lầu tây, và một tâm trạng buồn bã.",0.008517399705356638,0.32098765432098764
+5,"Misty mountains at dawn, lonely figure wandering. 
+Melancholic, nostalgic, longing. 
+Xám, trắng, cam. 
+Phong cách lãng mạn.","Một bức tranh thiên nhiên lãng mạn với hoa nở, mây mưa và âm thanh của đàn, thể hiện nỗi buồn trong tình yêu.",0.007620365649918418,0.19672131147540986
+6,"Mặc định một dãy núi có cảnh quan tuyệt đẹp, rộng lớn, bao quát trong xanh
+Kích động cảm giác hoà nhịp, yên bình, thư giãn
+Màu sắc thiên nhiên: Xanh lá cây, màu đất, trời trời
+Phong cách tự nhiên",một bức tranh thiên nhiên tươi đẹp với núi voi và cây biếc,0.006369304104455854,0.2696629213483146
+7,"Một bức tranh sơn thủy mờ ốp lấp màu nâu và xám với ánh nắng vàng lóe giữa. Cảm xúc buồn rầu, không khí yên lặng. Phong cách: Đồ họa tự nhiên.","Một bức tranh sơn thủy đầy màu sắc và sống động, thể hiện cuộc sống tuổi trẻ, với hình ảnh ngâm thơ và vui đùa.",0.12212865548711091,0.3870967741935484
+8,"Hàng râu rê rắt trước mái nhà đổ đoạn, ánh nắng chói sáng trên vách tan rồi. Không khí đầy sợ hãi, màu sắc đậm đà, phong cách nghệ thuật: Biết bao.","Một ngôi nhà cũ với vách tường rêu phong, ánh sáng nhạt, hình ảnh một người đàn ông trầm tư.",0.00825101291002796,0.2962962962962962
+9,"Một người già ngồi trong đêm, màu sắc tối, sự cô đơn và buồn rầu.","Một không gian ảm đạm, nơi những tâm tư và nỗi buồn được thể hiện qua những dòng thơ.",0.013323934178453772,0.38461538461538464
+10,"Cảnh: Bông hoa màu vàng rực rỡ trong vườn mùa xuân.
+Cảm xúc và không khí: Hạnh phúc, tươi vui
+Màu sắc chủ đạo: Vàng, xanh lá cây
+Phong cách nghệ thuật: Tự nhiên","Cây nêu trong mùa xuân với mọi người vui vẻ, cỏ hoa nở rộ.",0.008186841244220632,0.3684210526315789
+11,"Hoa kề cổ trủng đeo tình nặng dưới ánh vàng rụng. Nắng rơi nhẹ, mưa lướt qua. Sắc màu nâu xám, tím phai. Phong cách nghệ thuật: Lyrical","Khung cảnh mùa thu với gió hiu hắt, hoa lá rụng, thể hiện nỗi buồn.",0.006716472052354862,0.23529411764705882
+12,"Một hình ảnh mơ hồ với lá rơi từ bầu trời, sắc vàng, màu nhạt, nghệ thuật cổ điển.","Một khung cảnh mùa xuân với gió nhẹ, hoa nở, và âm thanh nhạc cầm, phản ánh tâm trạng buồn bã và nỗi nhớ",0.009307235968914158,0.3283582089552239
+13,"Cảnh: Bãi biển hoang tàn, mây đen lóe lên.
+Cảm xúc và không khí: Mịt ướt, buồn phiền, cô đơn.
+Màu sắc chủ đạo: Xanh láng, màu nâu đất.
+Phong cách nghệ thuật: Huyền bí.","Một hành trình tĩnh lặng qua không gian mờ ảo, với âm thanh chuông thiền vang vọng.",0.005311256555131655,0.21686746987951808
+14,"Thịều thiềm cung trong đêm trăng hạnh chênh vằng, người standing yên trong sầu buồn."" 
+""Melancholic với hơi nhạt về mong muốn.""
+""Màu trắng, đen, và màu pastel nhẹ.""
+""Huyền bí, lãng mạn.","Một khung cảnh thần tiên với trăng sáng, gió nhẹ và những tâm tư buồn bã.",0.007434360163166208,0.32911392405063294
+15,"Cốc trống dưới cây sen, ánh nắng lấp lánh nhẹ nhàng. Thư thái bình yên, sự im ắng. Màu trắng, xanh lá cây, màu sắc tự nhiên. Phong cách cổ điển.","Hình ảnh một người thiền định giữa thiên nhiên tĩnh lặng, ánh sáng dịu dàng chiếu xuống.",0.006032401726201458,0.2962962962962963
+16,"Towered bell stands under dark sky
+Mạnh mẽ trầm cảm, hụt hẫng
+Đen xám, nâu sẫm","Một nhóm bạn trẻ đứng xem chuông, trò chuyện vui vẻ.",0.0,0.3
+17,"Hoa nở trong vườn hoa, ánh nắng vàng. Âm thanh vui tươi, hạnh phúc không giới hạn. Màu sắc chủ đạo: Vàng, xanh lá cây, hồng. Phong cách nghệ thuật: Hài hoại.","Một cảnh tượng lãng mạn giữa hai người yêu nhau, tay nắm chặt.",0.0,0.273972602739726
+18,"Boat nhẹ lướt trên sông yên tĩnh, gió nhẹ làm sóng bay. Màu sắc ngả sang xanh nhạt, trời tĩnh lặng, nghệ thuật watercolor.","Một chiếc bách trôi nổi giữa dòng nước đầy sóng gió, biểu hiện nỗi buồn và sự lạc lõng.",0.007913247271422612,0.33333333333333337
+19,"Trải mấy thu nay vẫn hãy còn, dưới cỏ xanh ngả màu lá vàng, nước não trơ. Không khí mờ nhạt, buồn bã. Màu sắc chủ đạo: vàng, xanh. Phong cách nghệ thuật: Realist.","Hình ảnh bạch thố và ánh trăng trong đêm tối, thể hiện sự buồn bã và chờ đợi.",0.005474870710453651,0.2894736842105263

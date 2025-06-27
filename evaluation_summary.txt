@@ -1,0 +1,5 @@
+Evaluation Summary:
+Average BLEU: 0.0097
+Average ROUGE-1: 0.4499
+Average ROUGE-2: 0.1070
+Average ROUGE-L: 0.2877
