@@ -1,0 +1,22 @@
+{
+  "related_similarity": 0.7309625744819641,
+  "unrelated_similarity": 0.12922270596027374,
+  "self_similarity": 1.0,
+  "embedding_stats": {
+    "mean_norm": 1.0,
+    "std_norm": 3.7697287069704544e-08
+  },
+  "diffusion_compatibility": {
+    "embedding_diversity": 0.09677482396364212,
+    "embedding_norms": [
+      1.0,
+      1.0,
+      0.9999999403953552,
+      0.9999999403953552,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ]
+  }
+}

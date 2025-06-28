@@ -1,0 +1,123 @@
+PhoCLIP Text-Image Relevance Report
+==================================================
+
+Prompt: một người phụ nữ
+------------------------------
+Average similarity: 0.0600
+Maximum similarity: 0.0974
+Top matches:
+  1. 00000001883.jpg (0.0974)
+  2. 00000009758.jpg (0.0645)
+  3. 00000002992.jpg (0.0610)
+  4. 00000002414.jpg (0.0600)
+  5. 00000001241.jpg (0.0581)
+  Assessment: LOW RELEVANCE
+
+Prompt: con đường phố
+------------------------------
+Average similarity: -0.0005
+Maximum similarity: 0.0141
+Top matches:
+  1. 00000010324.jpg (0.0141)
+  2. 00000002918.jpg (0.0085)
+  3. 00000002986.jpg (0.0013)
+  4. 00000005197.jpg (0.0010)
+  5. 00000003907.jpg (-0.0015)
+  Assessment: LOW RELEVANCE
+
+Prompt: bầu trời xanh
+------------------------------
+Average similarity: 0.0533
+Maximum similarity: 0.0753
+Top matches:
+  1. 00000002918.jpg (0.0753)
+  2. 00000005119.jpg (0.0724)
+  3. 00000007303.jpg (0.0644)
+  4. 00000007452.jpg (0.0495)
+  5. 00000009996.jpg (0.0494)
+  Assessment: LOW RELEVANCE
+
+Prompt: hoa lá cây cối
+------------------------------
+Average similarity: 0.0622
+Maximum similarity: 0.0879
+Top matches:
+  1. 00000000122.jpg (0.0879)
+  2. 00000007452.jpg (0.0761)
+  3. 00000005738.jpeg (0.0694)
+  4. 00000011671.jpg (0.0645)
+  5. 00000004676.jpg (0.0587)
+  Assessment: LOW RELEVANCE
+
+Prompt: ánh sáng mặt trời
+------------------------------
+Average similarity: 0.0732
+Maximum similarity: 0.1146
+Top matches:
+  1. 00000002243.jpg (0.1146)
+  2. 00000009758.jpg (0.0980)
+  3. 00000003941.jpg (0.0850)
+  4. 00000004907.jpg (0.0790)
+  5. 00000004537.jpg (0.0704)
+  Assessment: LOW RELEVANCE
+
+Prompt: nước biển xanh
+------------------------------
+Average similarity: 0.0560
+Maximum similarity: 0.0846
+Top matches:
+  1. 00000002918.jpg (0.0846)
+  2. 00000000522.jpg (0.0694)
+  3. 00000005359.jpg (0.0585)
+  4. 00000004981.jpg (0.0521)
+  5. 00000001835.jpg (0.0503)
+  Assessment: LOW RELEVANCE
+
+Prompt: mây trắng
+------------------------------
+Average similarity: 0.0471
+Maximum similarity: 0.0637
+Top matches:
+  1. 00000004907.jpg (0.0637)
+  2. 00000007303.jpg (0.0589)
+  3. 00000009857.jpg (0.0531)
+  4. 00000002243.jpg (0.0502)
+  5. 00000009758.jpg (0.0492)
+  Assessment: LOW RELEVANCE
+
+Prompt: tình yêu
+------------------------------
+Average similarity: -0.0037
+Maximum similarity: 0.0161
+Top matches:
+  1. 00000002800.jpg (0.0161)
+  2. 00000003907.jpg (0.0125)
+  3. 00000001438.jpg (0.0016)
+  4. 00000003265.jpg (-0.0011)
+  5. 00000003095.jpg (-0.0030)
+  Assessment: LOW RELEVANCE
+
+Prompt: ngôi nhà
+------------------------------
+Average similarity: 0.0412
+Maximum similarity: 0.0618
+Top matches:
+  1. 00000002992.jpg (0.0618)
+  2. 00000009514.jpg (0.0540)
+  3. 00000010435.jpg (0.0410)
+  4. 00000010823.jpg (0.0400)
+  5. 00000002555.jpg (0.0392)
+  Assessment: LOW RELEVANCE
+
+Prompt: con mèo
+------------------------------
+Average similarity: 0.0654
+Maximum similarity: 0.0750
+Top matches:
+  1. 00000003907.jpg (0.0750)
+  2. 00000004907.jpg (0.0720)
+  3. 00000004537.jpg (0.0715)
+  4. 00000003941.jpg (0.0696)
+  5. 00000009758.jpg (0.0671)
+  Assessment: LOW RELEVANCE
+

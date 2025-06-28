@@ -22,8 +22,74 @@ class PhoCLIPEmbedding:
         
         print(f"Loading PhoCLIP model...")
         
-        # Always use the local model for now due to model type compatibility issues
-        self._load_local_model(fallback_path)
+        # Try to load from Hugging Face first, fallback to local if needed
+        try:
+            self._load_huggingface_model(model_repo)
+        except Exception as e:
+            print(f"Failed to load from Hugging Face: {e}")
+            print(f"Falling back to local model at {fallback_path}")
+            self._load_local_model(fallback_path)
+    
+    def _load_huggingface_model(self, model_repo):
+        """Load PhoCLIP model from Hugging Face Hub"""
+        import torch
+        import torch.nn as nn
+        from transformers import AutoTokenizer, AutoModel
+        from huggingface_hub import hf_hub_download
+        
+        print(f"Loading PhoCLIP model from Hugging Face: {model_repo}")
+        
+        # Load tokenizer (this should work directly)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_repo, use_fast=False)
+        print("✓ Tokenizer loaded successfully")
+        
+        # Download the complete model file
+        model_file = hf_hub_download(repo_id=model_repo, filename="model.pt")
+        print("✓ Model file downloaded")
+        
+        # Load the complete state dict
+        complete_state_dict = torch.load(model_file, map_location=self.device)
+        print("✓ Model state dict loaded")
+        
+        # Initialize text encoder (PhoBERT base)
+        self.text_encoder = AutoModel.from_pretrained("vinai/phobert-base").to(self.device)
+        
+        # Extract text encoder state dict
+        text_encoder_state_dict = {}
+        for key, value in complete_state_dict.items():
+            if key.startswith('text_encoder.'):
+                # Remove 'text_encoder.' prefix
+                new_key = key[len('text_encoder.'):]
+                text_encoder_state_dict[new_key] = value
+        
+        # Load text encoder weights
+        self.text_encoder.load_state_dict(text_encoder_state_dict)
+        print("✓ Text encoder weights loaded")
+        
+        # Initialize and load text projection head
+        self.text_proj = nn.Sequential(
+            nn.Linear(768, 768),
+            nn.ReLU(),
+            nn.Linear(768, 768)
+        ).to(self.device)
+        
+        # Extract text projection state dict
+        text_proj_state_dict = {}
+        for key, value in complete_state_dict.items():
+            if key.startswith('text_proj.'):
+                # Remove 'text_proj.' prefix
+                new_key = key[len('text_proj.'):]
+                text_proj_state_dict[new_key] = value
+        
+        # Load projection weights
+        self.text_proj.load_state_dict(text_proj_state_dict)
+        print("✓ Text projection weights loaded")
+        
+        # Set to evaluation mode
+        self.text_encoder.eval()
+        self.text_proj.eval()
+        
+        print("Successfully loaded PhoCLIP model from Hugging Face")
     
     def _load_local_model(self, checkpoint_path):
         import torch
@@ -174,9 +240,12 @@ class PromptGenerator:
     def generate(self, analysis):
         """Generate a diffusion model prompt in Vietnamese based on poem analysis"""
         if self.use_local_model and self.model is not None and self.tokenizer is not None:
-            return self._generate_with_local_model(analysis)
+            prompt = self._generate_with_local_model(analysis)
         else:
-            return self._generate_with_ollama(analysis)
+            prompt = self._generate_with_ollama(analysis)
+        # Clean the prompt: remove meta-instructions
+        prompt = self.clean_prompt(prompt)
+        return prompt
     
     def _generate_with_local_model(self, analysis):
         """Generate prompt using the local model"""
@@ -239,6 +308,21 @@ class PromptGenerator:
             return response['response']
         except Exception as e:
             return f"Lỗi khi tạo prompt: {str(e)}"
+    
+    def clean_prompt(self, prompt):
+        # Remove lines that contain meta-instructions
+        lines = prompt.split('\n')
+        cleaned_lines = []
+        for line in lines:
+            line = line.strip()
+            # Skip lines that are meta-instructions
+            if not line:
+                continue
+            if "tạo ra một prompt" in line or "Dựa trên phân tích" in line or "Instruction" in line or "Response" in line:
+                continue
+            cleaned_lines.append(line)
+        # Return the first non-empty, non-meta line, or join all cleaned lines
+        return cleaned_lines[0] if cleaned_lines else prompt
 
 
 class DiffusionGenerator:
@@ -273,6 +357,7 @@ class DiffusionGenerator:
             motion_adapter=adapter, 
             torch_dtype=torch.float16
         )
+        
         scheduler = DDIMScheduler.from_pretrained(
             model_id,
             subfolder="scheduler",
@@ -281,6 +366,7 @@ class DiffusionGenerator:
             beta_schedule="linear",
             steps_offset=1,
         )
+        
         pipe.scheduler = scheduler
 
         pipe.enable_vae_slicing()
@@ -291,9 +377,12 @@ class DiffusionGenerator:
     def generate(self, prompt, output_path="animation.gif", negative_prompt=None):
         """Generate animation from prompt"""
         if negative_prompt is None:
-            negative_prompt = "bad quality, worse quality, low resolution"
+            negative_prompt = "chất lượng kém, mờ, không rõ ràng"
         
-        prompt = "an aerial view of a cyberpunk city, night time, neon lights, masterpiece, high quality"
+        # Use the provided prompt instead of hardcoded one
+        if not prompt or prompt.strip() == "":
+            prompt = "Ba người phụ nữ đứng trên một con phố trong thành phố"
+        
         # Check prompt length and truncate if needed
         if len(prompt.split()) > 70:
             print(f"Cảnh báo: Prompt quá dài ({len(prompt.split())} từ). Đang cắt ngắn...")
@@ -322,7 +411,7 @@ class PoemToImagePipeline:
         # self.poem_analyzer = PoemAnalyzer()
         
         # Use your PhoCLIP model instead of CLIP
-        self.text_encoder = PhoCLIPEmbedding()
+        self.phoclip_encoder = PhoCLIPEmbedding()
         
         # Initialize the prompt generator
         # self.prompt_generator = PromptGenerator(use_local_model=use_local_model_for_prompt)
@@ -330,44 +419,180 @@ class PoemToImagePipeline:
         # Initialize the diffusion generator
         self.diffusion_generator = DiffusionGenerator()
         
-        # Keep the rest of your initialization code for diffusion model
-        self.pipe = AnimateDiffPipeline.from_pretrained(
-            "runwayml/stable-diffusion-v1-5",
-            torch_dtype=torch.float16,
-        )
-        self.pipe = self.pipe.to("cuda")
+        # Replace the text encoder in the diffusion pipeline with PhoCLIP
+        self._integrate_phoclip_with_pipeline()
+    
+    def _integrate_phoclip_with_pipeline(self):
+        """Replace the default text encoder with PhoCLIP"""
+        # Get the diffusion pipeline
+        self.pipe = self.diffusion_generator.pipe
         
-        # # Optional: use compel for better prompting
-        # self.compel_proc = Compel(
-        #     tokenizer=self.pipe.tokenizer,
-        #     text_encoder=self.pipe.text_encoder,
-        #     truncate_long_prompts=False,
-        # )
+        # Get the expected embedding dimension from the original text encoder
+        expected_dim = self.pipe.text_encoder.config.hidden_size
+        phoclip_dim = 768  # PhoCLIP output dimension
+        
+        # Create a projection layer if dimensions don't match
+        if phoclip_dim != expected_dim:
+            self.embedding_projection = torch.nn.Linear(phoclip_dim, expected_dim).to(
+                self.pipe.device, dtype=torch.float16
+            )
+            # Initialize with identity-like mapping
+            torch.nn.init.xavier_uniform_(self.embedding_projection.weight)
+        else:
+            self.embedding_projection = None
+        
+        # Store original encode_prompt method
+        self.original_encode_prompt = self.pipe.encode_prompt
+        
+        # Replace the encode prompt method
+        self.pipe.encode_prompt = self._phoclip_encode_prompt
+    
+    def _phoclip_encode_prompt(self, prompt, device, num_images_per_prompt, do_classifier_free_guidance, negative_prompt=None, prompt_embeds=None, negative_prompt_embeds=None, lora_scale=None, **kwargs):
+        """Custom encode prompt method using PhoCLIP"""
+        if prompt_embeds is None:
+            # Use PhoCLIP to encode the prompt
+            if isinstance(prompt, str):
+                prompt = [prompt]
+            
+            # Encode with PhoCLIP
+            prompt_embeds_list = []
+            for p in prompt:
+                phoclip_embed = self.phoclip_encoder.encode_text(p)
+                # Convert to torch tensor and move to device
+                phoclip_embed = torch.from_numpy(phoclip_embed).to(device, dtype=torch.float16)
+                
+                # Project to expected dimensions if needed
+                if self.embedding_projection is not None:
+                    phoclip_embed = self.embedding_projection(phoclip_embed)
+                
+                # The diffusion model expects embeddings of shape (batch_size, sequence_length, hidden_size)
+                # PhoCLIP gives us (batch_size, hidden_size), so we need to expand it
+                # Instead of repeating, let's use a more sophisticated approach
+                seq_length = 77  # Standard CLIP sequence length
+                hidden_size = phoclip_embed.shape[-1]
+                
+                # Create a sequence by interpolating the embedding
+                # This is better than just repeating the same embedding
+                phoclip_embed = phoclip_embed.unsqueeze(1)  # (batch_size, 1, hidden_size)
+                
+                # Use the same embedding for all positions but with slight variations
+                # This maintains the semantic meaning while providing sequence structure
+                phoclip_embed = phoclip_embed.repeat(1, seq_length, 1)
+                
+                # Add small positional variations to make it more realistic
+                position_embeddings = torch.randn_like(phoclip_embed) * 0.01
+                phoclip_embed = phoclip_embed + position_embeddings
+                
+                prompt_embeds_list.append(phoclip_embed)
+            
+            prompt_embeds = torch.cat(prompt_embeds_list, dim=0)
+            
+            # Repeat for batch size
+            if num_images_per_prompt > 1:
+                prompt_embeds = prompt_embeds.repeat(num_images_per_prompt, 1, 1)
+            
+            # Handle negative prompts
+            if do_classifier_free_guidance and negative_prompt_embeds is None:
+                if negative_prompt is None:
+                    negative_prompt = [""] * len(prompt)
+                elif isinstance(negative_prompt, str):
+                    negative_prompt = [negative_prompt]
+                
+                negative_prompt_embeds_list = []
+                for np in negative_prompt:
+                    if np == "":
+                        # Use zero embeddings for empty negative prompt
+                        neg_embed = torch.zeros_like(prompt_embeds[:1])
+                    else:
+                        neg_embed = self.phoclip_encoder.encode_text(np)
+                        neg_embed = torch.from_numpy(neg_embed).to(device, dtype=torch.float16)
+                        
+                        # Project to expected dimensions if needed
+                        if self.embedding_projection is not None:
+                            neg_embed = self.embedding_projection(neg_embed)
+                        
+                        # Apply the same sequence expansion as positive prompts
+                        seq_length = 77
+                        neg_embed = neg_embed.unsqueeze(1).repeat(1, seq_length, 1)
+                        
+                        # Add small positional variations
+                        position_embeddings = torch.randn_like(neg_embed) * 0.01
+                        neg_embed = neg_embed + position_embeddings
+                    
+                    negative_prompt_embeds_list.append(neg_embed)
+                
+                negative_prompt_embeds = torch.cat(negative_prompt_embeds_list, dim=0)
+                
+                if num_images_per_prompt > 1:
+                    negative_prompt_embeds = negative_prompt_embeds.repeat(num_images_per_prompt, 1, 1)
+        
+        return prompt_embeds, negative_prompt_embeds
     
     def process(self, poem, output_path="animation.gif"):
         """Process a poem through the full pipeline"""
         # 1. Analyze the poem
-        # print("=== PHÂN TÍCH BÀI THƠ ===")
-        # full_analysis = self.poem_analyzer.analyze(poem)
-        # print(full_analysis)
+        print("=== PHÂN TÍCH BÀI THƠ ===")
+        try:
+            self.poem_analyzer = PoemAnalyzer()
+            full_analysis = self.poem_analyzer.analyze(poem)
+            print(full_analysis)
+            
+            # 2. Extract key elements
+            print("\n=== TRÍCH XUẤT YẾU TỐ CHÍNH ===")
+            concise_analysis = self.poem_analyzer.extract_elements(full_analysis)
+            print(concise_analysis)
+            
+            # 3. Generate diffusion prompt
+            print("\n=== TẠO PROMPT CHO MÔ HÌNH DIFFUSION ===")
+            self.prompt_generator = PromptGenerator(use_local_model=False)
+            diffusion_prompt = self.prompt_generator.generate(concise_analysis)
+            print(f"Generated prompt: {diffusion_prompt}")
+            
+        except Exception as e:
+            print(f"Error in poem analysis: {e}")
+            print("Using fallback prompt generation...")
+            
+            # Fallback: Generate a simple prompt from the poem
+            diffusion_prompt = self._generate_fallback_prompt(poem)
+            print(f"Fallback prompt: {diffusion_prompt}")
         
-        # # 2. Extract key elements
-        # print("\n=== TRÍCH XUẤT YẾU TỐ CHÍNH ===")
-        # concise_analysis = self.poem_analyzer.extract_elements(full_analysis)
-        # print(concise_analysis)
-        
-        # # 3. Generate diffusion prompt
-        # print("\n=== TẠO PROMPT CHO MÔ HÌNH DIFFUSION ===")
-        # diffusion_prompt = self.prompt_generator.generate(concise_analysis)
-        # print(diffusion_prompt)
-        
-        diffusion_prompt = ""
         # 4. Generate animation
         print("\n=== TẠO HÌNH ẢNH ĐỘNG ===")
         animation_path = self.diffusion_generator.generate(diffusion_prompt, output_path)
         
         print(f"\nHoàn thành! Animation đã được tạo tại: {animation_path}")
         return animation_path
+    
+    def _generate_fallback_prompt(self, poem):
+        """Generate a fallback prompt when poem analysis fails"""
+        # Extract key words from the poem
+        poem_lines = poem.strip().split('\n')
+        
+        # Simple keyword extraction
+        keywords = []
+        for line in poem_lines:
+            line = line.strip()
+            if line:
+                # Extract Vietnamese words (basic approach)
+                words = line.split()
+                for word in words:
+                    # Remove punctuation and special characters
+                    clean_word = ''.join(c for c in word if c.isalnum() or c.isspace())
+                    if len(clean_word) > 2:  # Only keep words longer than 2 characters
+                        keywords.append(clean_word)
+        
+        # Take the most common words
+        from collections import Counter
+        word_counts = Counter(keywords)
+        top_words = [word for word, count in word_counts.most_common(5)]
+        
+        # Create a simple prompt
+        if top_words:
+            prompt = f"một cảnh đẹp với {' '.join(top_words[:3])}"
+        else:
+            prompt = "một cảnh đẹp thiên nhiên"
+        
+        return prompt
 
 
 def main():
