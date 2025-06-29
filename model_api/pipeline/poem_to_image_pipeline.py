@@ -120,7 +120,7 @@ class PoemToImagePipeline:
         
         return prompt_embeds, negative_prompt_embeds
     
-    def process(self, poem, output_path="animation.gif"):
+    def process(self, poem, output_path="animation.gif", prompt_generation_mode="analysis_to_vietnamese"):
         """Process a poem through the full pipeline"""
         # 1. Analyze the poem
         print("=== PHÂN TÍCH BÀI THƠ ===")
@@ -134,10 +134,10 @@ class PoemToImagePipeline:
             concise_analysis = self.poem_analyzer.extract_elements(full_analysis)
             print(concise_analysis)
             
-            # 3. Generate diffusion prompt
-            print("\n=== TẠO PROMPT CHO MÔ HÌNH DIFFUSION ===")
+            # 3. Generate diffusion prompt based on mode
+            print(f"\n=== TẠO PROMPT CHO MÔ HÌNH DIFFUSION (Mode: {prompt_generation_mode}) ===")
             self.prompt_generator = PromptGenerator(use_local_model=False)
-            diffusion_prompt = self.prompt_generator.generate(concise_analysis)
+            diffusion_prompt = self.prompt_generator.generate(concise_analysis, mode=prompt_generation_mode)
             print(f"Generated prompt: {diffusion_prompt}")
             
         except Exception as e:

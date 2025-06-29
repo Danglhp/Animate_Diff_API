@@ -1,3 +1,3 @@
-from .api_schemas import PoemRequest, PoemResponse
+from .api_schemas import PoemRequest, PoemResponse, PromptGenerationMode
 
-__all__ = ['PoemRequest', 'PoemResponse'] 
+__all__ = ['PoemRequest', 'PoemResponse', 'PromptGenerationMode'] 

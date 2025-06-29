@@ -79,11 +79,12 @@ async def generate_animation(poem_request: PoemRequest, background_tasks: Backgr
     tasks[task_id] = {
         "status": "processing",
         "output_path": str(output_path),
-        "poem": poem_request.poem
+        "poem": poem_request.poem,
+        "prompt_generation_mode": poem_request.prompt_generation_mode
     }
     
     # Add background task
-    background_tasks.add_task(process_poem, task_id, poem_request.poem, str(output_path))
+    background_tasks.add_task(process_poem, task_id, poem_request.poem, str(output_path), poem_request.prompt_generation_mode)
     
     return PoemResponse(
         task_id=task_id,
@@ -103,7 +104,8 @@ async def get_task_status(task_id: str):
         "task_id": task_id,
         "status": task["status"],
         "output_path": task.get("output_path"),
-        "poem": task.get("poem", "")
+        "poem": task.get("poem", ""),
+        "prompt_generation_mode": task.get("prompt_generation_mode", "analysis_to_vietnamese")
     }
 
 @app.get("/download/{task_id}")
@@ -127,16 +129,16 @@ async def download_animation(task_id: str):
         media_type="image/gif"
     )
 
-async def process_poem(task_id: str, poem: str, output_path: str):
+async def process_poem(task_id: str, poem: str, output_path: str, prompt_generation_mode: str = "analysis_to_vietnamese"):
     """Background task to process poem and generate animation"""
     try:
-        logger.info(f"Processing poem for task {task_id}")
+        logger.info(f"Processing poem for task {task_id} with mode: {prompt_generation_mode}")
         
         # Update task status
         tasks[task_id]["status"] = "processing"
         
-        # Process the poem
-        result_path = pipeline.process(poem, output_path)
+        # Process the poem with the specified prompt generation mode
+        result_path = pipeline.process(poem, output_path, prompt_generation_mode)
         
         # Update task status
         tasks[task_id]["status"] = "completed"
@@ -158,7 +160,8 @@ async def list_tasks():
                 "task_id": task_id,
                 "status": task["status"],
                 "output_path": task.get("output_path"),
-                "poem": task.get("poem", "")[:100] + "..." if len(task.get("poem", "")) > 100 else task.get("poem", "")
+                "poem": task.get("poem", "")[:100] + "..." if len(task.get("poem", "")) > 100 else task.get("poem", ""),
+                "prompt_generation_mode": task.get("prompt_generation_mode", "analysis_to_vietnamese")
             }
             for task_id, task in tasks.items()
         ]

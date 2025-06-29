@@ -1,6 +1,6 @@
 from .pipeline import PoemToImagePipeline
 from .models import PhoCLIPEmbedding, PoemAnalyzer, PromptGenerator, DiffusionGenerator
-from .schemas import PoemRequest, PoemResponse
+from .schemas import PoemRequest, PoemResponse, PromptGenerationMode
 
 __all__ = [
     'PoemToImagePipeline',
@@ -9,5 +9,6 @@ __all__ = [
     'PromptGenerator',
     'DiffusionGenerator',
     'PoemRequest',
-    'PoemResponse'
+    'PoemResponse',
+    'PromptGenerationMode'
 ] 
