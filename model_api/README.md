@@ -171,3 +171,25 @@ All models are loaded from Hugging Face Hub:
 - Llama3.2: `kienhoang123/Llama3.2_Poem_Analysis`
 - AnimateDiff: `guoyww/animatediff-motion-adapter-v1-5-2`
 - Realistic Vision: `SG161222/Realistic_Vision_V5.1_noVAE` 
+
+## 📦 Image and Metadata Storage
+
+After each image generation task, the following files are saved directly in the `model_api/` folder:
+
+- The generated image file (e.g., `yourfilename_YYYYMMDD_HHMMSS.gif/png/jpg`)
+- A metadata JSON file (e.g., `yourfilename_YYYYMMDD_HHMMSS_metadata.json`)
+
+### Metadata JSON Format
+Each metadata file contains:
+- `task_id`: The unique task identifier from the API
+- `image_name`: The name of the generated image file
+- `prompt_used`: The prompt used to generate the image
+- `input_poem`: The original poem input
+- `negative_prompt`: The negative prompt used (if any)
+- `output_filename`: The base filename provided by the user
+- `settings`: All data used to create the task (text encoder, prompt mode, etc.)
+- `timestamp`: When the generation was completed
+- `original_image_path`: The original path of the generated image
+- `status`: 'completed' or 'failed'
+
+You can find all generated images and their corresponding metadata JSON files in the `model_api/` directory after each run. 

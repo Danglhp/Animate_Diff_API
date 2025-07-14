@@ -1,3 +1,3 @@
-from .api_schemas import PoemRequest, PoemResponse, PromptGenerationMode
+from .api_schemas import PoemRequest, PoemResponse, PromptGenerationMode, TextEncoderType, NegativePromptCategory
 
-__all__ = ['PoemRequest', 'PoemResponse', 'PromptGenerationMode'] 
+__all__ = ['PoemRequest', 'PoemResponse', 'PromptGenerationMode', 'TextEncoderType', 'NegativePromptCategory'] 

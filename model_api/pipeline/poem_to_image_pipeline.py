@@ -3,16 +3,22 @@ from pathlib import Path
 from models import PhoCLIPEmbedding, PoemAnalyzer, PromptGenerator, DiffusionGenerator
 
 class PoemToImagePipeline:
-    """Main pipeline to convert poem to animation"""
-    def __init__(self, use_local_model_for_prompt=False):
-        # Use your PhoCLIP model instead of CLIP
-        self.phoclip_encoder = PhoCLIPEmbedding()
+    """Main pipeline to convert poem to animation with support for both PhoCLIP and base text encoders"""
+    def __init__(self, text_encoder_type="phoclip", use_local_model_for_prompt=False):
+        self.text_encoder_type = text_encoder_type
+        self.use_local_model_for_prompt = use_local_model_for_prompt
         
         # Initialize the diffusion generator
         self.diffusion_generator = DiffusionGenerator()
         
-        # Replace the text encoder in the diffusion pipeline with PhoCLIP
-        self._integrate_phoclip_with_pipeline()
+        # Initialize text encoder based on type
+        if text_encoder_type == "phoclip":
+            self.phoclip_encoder = PhoCLIPEmbedding()
+            self._integrate_phoclip_with_pipeline()
+        else:
+            # Use base model text encoder (no integration needed)
+            self.phoclip_encoder = None
+            self.pipe = self.diffusion_generator.pipe
     
     def _integrate_phoclip_with_pipeline(self):
         """Replace the default text encoder with PhoCLIP"""
@@ -59,16 +65,13 @@ class PoemToImagePipeline:
                 
                 # The diffusion model expects embeddings of shape (batch_size, sequence_length, hidden_size)
                 # PhoCLIP gives us (batch_size, hidden_size), so we need to expand it
-                # Instead of repeating, let's use a more sophisticated approach
                 seq_length = 77  # Standard CLIP sequence length
                 hidden_size = phoclip_embed.shape[-1]
                 
                 # Create a sequence by interpolating the embedding
-                # This is better than just repeating the same embedding
                 phoclip_embed = phoclip_embed.unsqueeze(1)  # (batch_size, 1, hidden_size)
                 
                 # Use the same embedding for all positions but with slight variations
-                # This maintains the semantic meaning while providing sequence structure
                 phoclip_embed = phoclip_embed.repeat(1, seq_length, 1)
                 
                 # Add small positional variations to make it more realistic
@@ -120,8 +123,23 @@ class PoemToImagePipeline:
         
         return prompt_embeds, negative_prompt_embeds
     
-    def process(self, poem, output_path="animation.gif", prompt_generation_mode="analysis_to_vietnamese"):
+    def _get_negative_prompt(self, category, custom_prompt=None):
+        """Get negative prompt based on category"""
+        negative_prompts = {
+            "general": "bad quality, worse quality, low quality, blurry, distorted",
+            "artistic": "bad art, ugly, deformed, poorly drawn, sketch, amateur",
+            "technical": "blurry, pixelated, low resolution, artifacts, noise",
+            "custom": custom_prompt if custom_prompt else "bad quality, worse quality"
+        }
+        return negative_prompts.get(category, "bad quality, worse quality")
+    
+    def process(self, poem, output_path="animation.gif", prompt_generation_mode="analysis_to_vietnamese", 
+                text_encoder_type="phoclip", negative_prompt_category="general", custom_negative_prompt=None):
         """Process a poem through the full pipeline"""
+        # Update text encoder if needed
+        if text_encoder_type != self.text_encoder_type:
+            self.__init__(text_encoder_type, self.use_local_model_for_prompt)
+        
         # 1. Analyze the poem
         print("=== PHÂN TÍCH BÀI THƠ ===")
         try:
@@ -134,10 +152,28 @@ class PoemToImagePipeline:
             concise_analysis = self.poem_analyzer.extract_elements(full_analysis)
             print(concise_analysis)
             
-            # 3. Generate diffusion prompt based on mode
-            print(f"\n=== TẠO PROMPT CHO MÔ HÌNH DIFFUSION (Mode: {prompt_generation_mode}) ===")
-            self.prompt_generator = PromptGenerator(use_local_model=False)
-            diffusion_prompt = self.prompt_generator.generate(concise_analysis, mode=prompt_generation_mode)
+            # 3. Generate diffusion prompt based on mode and text encoder
+            print(f"\n=== TẠO PROMPT CHO MÔ HÌNH DIFFUSION (Mode: {prompt_generation_mode}, Encoder: {text_encoder_type}) ===")
+            self.prompt_generator = PromptGenerator(use_local_model=self.use_local_model_for_prompt)
+            
+            # Determine prompt language based on text encoder and mode
+            if text_encoder_type == "phoclip":
+                # PhoCLIP approach: Generate Vietnamese prompt after analysis
+                if prompt_generation_mode == "analysis_to_vietnamese":
+                    diffusion_prompt = self.prompt_generator.generate(concise_analysis, mode="analysis_to_vietnamese")
+                elif prompt_generation_mode == "analysis_to_english":
+                    diffusion_prompt = self.prompt_generator.generate(concise_analysis, mode="analysis_to_english")
+                else:
+                    diffusion_prompt = self.prompt_generator.generate(concise_analysis, mode="direct_prompt")
+            else:
+                # Base model approach: Generate English prompt after analysis
+                if prompt_generation_mode == "analysis_to_vietnamese":
+                    diffusion_prompt = self.prompt_generator.generate(concise_analysis, mode="analysis_to_english")
+                elif prompt_generation_mode == "analysis_to_english":
+                    diffusion_prompt = self.prompt_generator.generate(concise_analysis, mode="analysis_to_english")
+                else:
+                    diffusion_prompt = self.prompt_generator.generate(concise_analysis, mode="direct_prompt")
+            
             print(f"Generated prompt: {diffusion_prompt}")
             
         except Exception as e:
@@ -145,17 +181,27 @@ class PoemToImagePipeline:
             print("Using fallback prompt generation...")
             
             # Fallback: Generate a simple prompt from the poem
-            diffusion_prompt = self._generate_fallback_prompt(poem)
+            diffusion_prompt = self._generate_fallback_prompt(poem, text_encoder_type)
             print(f"Fallback prompt: {diffusion_prompt}")
         
-        # 4. Generate animation
+        # 4. Get negative prompt
+        negative_prompt = self._get_negative_prompt(negative_prompt_category, custom_negative_prompt)
+        print(f"Negative prompt: {negative_prompt}")
+        
+        # 5. Generate animation
         print("\n=== TẠO HÌNH ẢNH ĐỘNG ===")
-        animation_path = self.diffusion_generator.generate(diffusion_prompt, output_path)
+        animation_path = self.diffusion_generator.generate(diffusion_prompt, output_path, negative_prompt)
         
         print(f"\nHoàn thành! Animation đã được tạo tại: {animation_path}")
-        return animation_path
+        
+        # Return both the animation path and the generated prompt
+        return {
+            "animation_path": animation_path,
+            "generated_prompt": diffusion_prompt,
+            "negative_prompt": negative_prompt
+        }
     
-    def _generate_fallback_prompt(self, poem):
+    def _generate_fallback_prompt(self, poem, text_encoder_type):
         """Generate a fallback prompt when poem analysis fails"""
         # Extract key words from the poem
         poem_lines = poem.strip().split('\n')
@@ -178,10 +224,18 @@ class PoemToImagePipeline:
         word_counts = Counter(keywords)
         top_words = [word for word, count in word_counts.most_common(5)]
         
-        # Create a simple prompt
-        if top_words:
-            prompt = f"một cảnh đẹp với {' '.join(top_words[:3])}"
+        # Create a simple prompt based on text encoder type
+        if text_encoder_type == "phoclip":
+            # Vietnamese prompt for PhoCLIP
+            if top_words:
+                prompt = f"một cảnh đẹp với {' '.join(top_words[:3])}"
+            else:
+                prompt = "một cảnh đẹp thiên nhiên"
         else:
-            prompt = "một cảnh đẹp thiên nhiên"
+            # English prompt for base model
+            if top_words:
+                prompt = f"a beautiful scene with {' '.join(top_words[:3])}"
+            else:
+                prompt = "a beautiful natural scene"
         
         return prompt 

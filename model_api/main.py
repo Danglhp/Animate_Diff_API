@@ -7,7 +7,7 @@ from typing import Optional
 import logging
 
 from pipeline import PoemToImagePipeline
-from schemas import PoemRequest, PoemResponse
+from schemas import PoemRequest, PoemResponse, TextEncoderType, PromptGenerationMode, NegativePromptCategory
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -54,6 +54,57 @@ async def health_check():
         "pipeline_loaded": pipeline is not None
     }
 
+@app.get("/text-encoders")
+async def get_text_encoders():
+    """Get available text encoder options"""
+    return {
+        "text_encoders": [
+            {
+                "id": "phoclip",
+                "name": "PhoCLIP",
+                "description": "Vietnamese-optimized text encoder using PhoBERT + CLIP vision encoder"
+            },
+            {
+                "id": "base",
+                "name": "Base Model",
+                "description": "Standard CLIP text encoder for English prompts"
+            }
+        ]
+    }
+
+@app.get("/negative-prompt-categories")
+async def get_negative_prompt_categories():
+    """Get available negative prompt categories"""
+    return {
+        "categories": [
+            {
+                "id": "general",
+                "name": "General",
+                "description": "General quality issues like blur, distortion"
+            },
+            {
+                "id": "artistic",
+                "name": "Artistic",
+                "description": "Artistic style issues like bad art, ugly"
+            },
+            {
+                "id": "technical",
+                "name": "Technical",
+                "description": "Technical quality issues like pixelation, artifacts"
+            },
+            {
+                "id": "content",
+                "name": "Content",
+                "description": "Content-specific issues like inappropriate content"
+            },
+            {
+                "id": "custom",
+                "name": "Custom",
+                "description": "Custom negative prompt specified by user"
+            }
+        ]
+    }
+
 @app.post("/generate", response_model=PoemResponse)
 async def generate_animation(poem_request: PoemRequest, background_tasks: BackgroundTasks):
     """Generate animation from poem"""
@@ -80,11 +131,23 @@ async def generate_animation(poem_request: PoemRequest, background_tasks: Backgr
         "status": "processing",
         "output_path": str(output_path),
         "poem": poem_request.poem,
-        "prompt_generation_mode": poem_request.prompt_generation_mode
+        "text_encoder": poem_request.text_encoder,
+        "prompt_generation_mode": poem_request.prompt_generation_mode,
+        "negative_prompt_category": poem_request.negative_prompt_category,
+        "custom_negative_prompt": poem_request.custom_negative_prompt
     }
     
     # Add background task
-    background_tasks.add_task(process_poem, task_id, poem_request.poem, str(output_path), poem_request.prompt_generation_mode)
+    background_tasks.add_task(
+        process_poem, 
+        task_id, 
+        poem_request.poem, 
+        str(output_path), 
+        poem_request.text_encoder,
+        poem_request.prompt_generation_mode,
+        poem_request.negative_prompt_category,
+        poem_request.custom_negative_prompt
+    )
     
     return PoemResponse(
         task_id=task_id,
@@ -100,13 +163,23 @@ async def get_task_status(task_id: str):
         raise HTTPException(status_code=404, detail="Task not found")
     
     task = tasks[task_id]
-    return {
+    response_data = {
         "task_id": task_id,
         "status": task["status"],
         "output_path": task.get("output_path"),
         "poem": task.get("poem", ""),
-        "prompt_generation_mode": task.get("prompt_generation_mode", "analysis_to_vietnamese")
+        "text_encoder": task.get("text_encoder", "phoclip"),
+        "prompt_generation_mode": task.get("prompt_generation_mode", "analysis_to_vietnamese"),
+        "negative_prompt_category": task.get("negative_prompt_category", "general"),
+        "custom_negative_prompt": task.get("custom_negative_prompt")
     }
+    
+    # Add generated prompt and negative prompt if task is completed
+    if task["status"] == "completed":
+        response_data["generated_prompt"] = task.get("generated_prompt", "Not available")
+        response_data["negative_prompt"] = task.get("negative_prompt", "Not available")
+    
+    return response_data
 
 @app.get("/download/{task_id}")
 async def download_animation(task_id: str):
@@ -129,20 +202,34 @@ async def download_animation(task_id: str):
         media_type="image/gif"
     )
 
-async def process_poem(task_id: str, poem: str, output_path: str, prompt_generation_mode: str = "analysis_to_vietnamese"):
+async def process_poem(task_id: str, poem: str, output_path: str, text_encoder: TextEncoderType, 
+                      prompt_generation_mode: PromptGenerationMode, negative_prompt_category: NegativePromptCategory,
+                      custom_negative_prompt: Optional[str] = None):
     """Background task to process poem and generate animation"""
     try:
-        logger.info(f"Processing poem for task {task_id} with mode: {prompt_generation_mode}")
+        logger.info(f"Processing poem for task {task_id}")
+        logger.info(f"Text encoder: {text_encoder}")
+        logger.info(f"Prompt generation mode: {prompt_generation_mode}")
+        logger.info(f"Negative prompt category: {negative_prompt_category}")
         
         # Update task status
         tasks[task_id]["status"] = "processing"
         
-        # Process the poem with the specified prompt generation mode
-        result_path = pipeline.process(poem, output_path, prompt_generation_mode)
+        # Process the poem with the specified parameters
+        result = pipeline.process(
+            poem, 
+            output_path, 
+            prompt_generation_mode,
+            text_encoder,
+            negative_prompt_category,
+            custom_negative_prompt
+        )
         
-        # Update task status
+        # Update task status with results
         tasks[task_id]["status"] = "completed"
-        tasks[task_id]["output_path"] = result_path
+        tasks[task_id]["output_path"] = result["animation_path"]
+        tasks[task_id]["generated_prompt"] = result["generated_prompt"]
+        tasks[task_id]["negative_prompt"] = result["negative_prompt"]
         
         logger.info(f"Task {task_id} completed successfully")
         
@@ -161,7 +248,10 @@ async def list_tasks():
                 "status": task["status"],
                 "output_path": task.get("output_path"),
                 "poem": task.get("poem", "")[:100] + "..." if len(task.get("poem", "")) > 100 else task.get("poem", ""),
-                "prompt_generation_mode": task.get("prompt_generation_mode", "analysis_to_vietnamese")
+                "text_encoder": task.get("text_encoder", "phoclip"),
+                "prompt_generation_mode": task.get("prompt_generation_mode", "analysis_to_vietnamese"),
+                "negative_prompt_category": task.get("negative_prompt_category", "general"),
+                "generated_prompt": task.get("generated_prompt", "Not available") if task["status"] == "completed" else "Not available"
             }
             for task_id, task in tasks.items()
         ]

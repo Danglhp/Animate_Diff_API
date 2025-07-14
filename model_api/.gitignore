@@ -1,0 +1,29 @@
+# Ignore outputs and results
+outputs/
+comprehensive_clip_results/
+clip_score_results.json
+clip_score_results.png
+multiple_poems_clip_scores.json
+multiple_poems_clip_scores.png
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.csv
+*.txt
+*.safetensors
+*.pth
+*.pt
+*.log
+__pycache__/
+# Ignore test and evaluation results
+evaluation_results/
+# Ignore checkpoint and model weights
+phoclip_checkpoint/
+# Ignore dataset and generated images
+ktvic/ktvic_dataset/public-test-images/
+ktvic/ktvic_dataset/train-images/
+generated_images/
+# Ignore other non-code artifacts
+*.tmp
+*.bak 
